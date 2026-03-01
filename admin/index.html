@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RozgarX Admin Panel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.8.0/Recharts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1923; color: #e2e8f0; }
+  :root {
+    --blue: #1A3C6E; --blue-light: #2B5FAA; --orange: #FF6B00;
+    --dark-bg: #0f1923; --dark-card: #1c2b3a; --dark-border: #2a3a4a;
+    --success: #10B981; --error: #EF4444; --warning: #F59E0B;
+    --text: #e2e8f0; --text-muted: #94a3b8;
+  }
+  .sidebar { width: 240px; background: var(--dark-card); height: 100vh; position: fixed; left: 0; top: 0;
+    border-right: 1px solid var(--dark-border); overflow-y: auto; }
+  .main-content { margin-left: 240px; padding: 24px; min-height: 100vh; }
+  .logo { padding: 20px; border-bottom: 1px solid var(--dark-border); }
+  .logo h2 { color: var(--orange); font-size: 20px; font-weight: 700; }
+  .logo span { color: var(--text-muted); font-size: 12px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px;
+    cursor: pointer; transition: all 0.2s; color: var(--text-muted); font-size: 14px; border: none;
+    background: none; width: 100%; text-align: left; }
+  .nav-item:hover, .nav-item.active { background: var(--blue-light)22; color: var(--text); border-left: 3px solid var(--blue-light); }
+  .nav-item.active { color: var(--blue-light); }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--dark-card); border-radius: 12px; padding: 20px; border: 1px solid var(--dark-border); }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
+  .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .stat-change { font-size: 12px; margin-top: 8px; }
+  .positive { color: var(--success); }
+  .negative { color: var(--error); }
+  .card { background: var(--dark-card); border-radius: 12px; padding: 20px; border: 1px solid var(--dark-border); margin-bottom: 20px; }
+  .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text); }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase;
+    color: var(--text-muted); border-bottom: 1px solid var(--dark-border); }
+  td { padding: 12px; border-bottom: 1px solid var(--dark-border)44; font-size: 13px; vertical-align: middle; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: var(--success)22; color: var(--success); }
+  .badge-blue { background: var(--blue-light)22; color: var(--blue-light); }
+  .badge-orange { background: var(--orange)22; color: var(--orange); }
+  .badge-red { background: var(--error)22; color: var(--error); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
+  .btn-primary { background: var(--blue-light); color: white; }
+  .btn-primary:hover { background: var(--blue); }
+  .btn-orange { background: var(--orange); color: white; }
+  .btn-danger { background: var(--error)22; color: var(--error); }
+  .btn-success { background: var(--success)22; color: var(--success); }
+  .btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 6px; }
+  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .search-input { background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 8px;
+    padding: 8px 14px; color: var(--text); font-size: 13px; outline: none; width: 280px; }
+  .search-input:focus { border-color: var(--blue-light); }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+  .form-control { width: 100%; background: var(--dark-bg); border: 1px solid var(--dark-border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; outline: none; }
+  .form-control:focus { border-color: var(--blue-light); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100;
+    display: flex; align-items: center; justify-content: center; }
+  .modal { background: var(--dark-card); border-radius: 16px; padding: 24px; width: 600px;
+    max-height: 80vh; overflow-y: auto; border: 1px solid var(--dark-border); }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .close-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; }
+  .login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-card { background: var(--dark-card); border-radius: 20px; padding: 40px; width: 400px;
+    border: 1px solid var(--dark-border); }
+  .login-logo { font-size: 32px; font-weight: 800; color: var(--orange); text-align: center; margin-bottom: 8px; }
+  .login-sub { text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 32px; }
+  .action-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .text-muted { color: var(--text-muted); }
+  .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; }
+  .tabs { display: flex; gap: 2px; margin-bottom: 20px; background: var(--dark-bg); border-radius: 10px; padding: 4px; }
+  .tab { flex: 1; text-align: center; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 13px;
+    transition: all 0.2s; color: var(--text-muted); }
+  .tab.active { background: var(--blue-light); color: white; }
+  .broadcast-box { background: var(--dark-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--dark-border); }
+  .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--text-muted); }
+  .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--dark-border); border-top-color: var(--blue-light);
+    border-radius: 50%; animation: spin 0.8s linear infinite; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const API_BASE = 'https://rozgarx-api.onrender.com/api';
+
+// ─── API HELPER ──────────────────────────────────────────────
+const api = async (method, path, body = null) => {
+  const token = localStorage.getItem('admin_token');
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    ...(body ? { body: JSON.stringify(body) } : {})
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+};
+
+// ─── LOGIN SCREEN ─────────────────────────────────────────────
+const LoginScreen = ({ onLogin }) => {
+  const [form, setForm] = React.useState({ username: '', password: '', totp: '' });
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [needsTotp, setNeedsTotp] = React.useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const data = await api('POST', '/admin/login', form);
+      localStorage.setItem('admin_token', data.token);
+      onLogin(data.username);
+    } catch (err) {
+      if (err.message.includes('2FA')) setNeedsTotp(true);
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo">RozgarX</div>
+        <div className="login-sub">Admin Panel — Authorized Access Only</div>
+        <form onSubmit={handleLogin}>
+          <div className="form-group">
+            <label className="form-label">Username</label>
+            <input className="form-control" placeholder="admin"
+              value={form.username}
+              onChange={e => setForm({...form, username: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <input className="form-control" type="password" placeholder="••••••••"
+              value={form.password}
+              onChange={e => setForm({...form, password: e.target.value})} />
+          </div>
+          {needsTotp && (
+            <div className="form-group">
+              <label className="form-label">2FA Code (from authenticator app)</label>
+              <input className="form-control" placeholder="000000" maxLength={6}
+                value={form.totp}
+                onChange={e => setForm({...form, totp: e.target.value})} />
+            </div>
+          )}
+          {error && <p style={{color:'var(--error)', fontSize:13, marginBottom:12}}>{error}</p>}
+          <button type="submit" className="btn btn-orange" style={{width:'100%', padding:'12px', justifyContent:'center'}}
+            disabled={loading}>
+            {loading ? <div className="spinner" /> : '🔐 Sign In to Admin'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ─── DASHBOARD ────────────────────────────────────────────────
+const Dashboard = () => {
+  const [stats, setStats] = React.useState(null);
+
+  React.useEffect(() => {
+    api('GET', '/admin/dashboard').then(setStats).catch(console.error);
+  }, []);
+
+  const cards = stats ? [
+    { label: 'Total Users', value: stats.total_users?.toLocaleString(), icon: '👥', change: `${stats.active_users_30d} active (30d)`, positive: true },
+    { label: 'Premium Users', value: stats.premium_users?.toLocaleString(), icon: '💎', change: `${((stats.premium_users/stats.total_users)*100).toFixed(1)}% conversion`, positive: true },
+    { label: 'Total Jobs', value: stats.total_jobs?.toLocaleString(), icon: '💼', change: `+${stats.today_jobs} today`, positive: true },
+    { label: 'Total Revenue', value: `₹${((stats.total_revenue_paise||0)/100).toLocaleString()}`, icon: '💰', change: 'All time', positive: true },
+  ] : [];
+
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-title">📊 Dashboard</div>
+        <span className="text-muted" style={{fontSize:13}}>Last updated: just now</span>
+      </div>
+      <div className="stat-grid">
+        {!stats ? Array(4).fill(0).map((_, i) => (
+          <div key={i} className="stat-card" style={{minHeight:100}}>
+            <div style={{background:'var(--dark-border)', borderRadius:8, height:60, animation:'pulse 1.5s infinite'}} />
+          </div>
+        )) : cards.map((c, i) => (
+          <div key={i} className="stat-card">
+            <div style={{fontSize:28, marginBottom:8}}>{c.icon}</div>
+            <div className="stat-value">{c.value}</div>
+            <div className="stat-label">{c.label}</div>
+            <div className={`stat-change ${c.positive ? 'positive' : 'negative'}`}>{c.change}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card">
+        <div className="card-title">Quick Actions</div>
+        <div style={{display:'flex', gap:12, flexWrap:'wrap'}}>
+          {[
+            {label:'Add New Job', icon:'➕', color:'btn-primary'},
+            {label:'Send Notification', icon:'🔔', color:'btn-orange'},
+            {label:'Approve Scraped Jobs', icon:'✅', color:'btn-success'},
+            {label:'View Revenue Report', icon:'📈', color:'btn-primary'},
+          ].map((a,i) => (
+            <button key={i} className={`btn ${a.color}`}>{a.icon} {a.label}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── JOBS MANAGEMENT ─────────────────────────────────────────
+const JobsManager = () => {
+  const [jobs, setJobs] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filter, setFilter] = React.useState('all');
+  const [showModal, setShowModal] = React.useState(false);
+  const [form, setForm] = React.useState({
+    title:'', department:'', organization:'', category:'government',
+    state:'All India', vacancies:'', salary_text:'', qualification:'',
+    application_fee:'', last_date:'', apply_url:'', short_description:''
+  });
+
+  const fetchJobs = async () => {
+    setLoading(true);
+    try {
+      const params = filter === 'pending' ? '?verified=false' :
+                     filter === 'featured' ? '?featured=true' : '';
+      const data = await api('GET', `/admin/jobs${params}`);
+      setJobs(data);
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  };
+
+  React.useEffect(() => { fetchJobs(); }, [filter]);
+
+  const approve = async (id) => {
+    await api('PUT', `/admin/jobs/${id}/approve`);
+    fetchJobs();
+  };
+  const feature = async (id, val) => {
+    await api('PUT', `/admin/jobs/${id}/feature`, { featured: val });
+    fetchJobs();
+  };
+  const deleteJob = async (id) => {
+    if (!confirm('Delete this job?')) return;
+    await api('DELETE', `/admin/jobs/${id}`);
+    fetchJobs();
+  };
+  const addJob = async (e) => {
+    e.preventDefault();
+    await api('POST', '/admin/jobs', form);
+    setShowModal(false);
+    fetchJobs();
+  };
+
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-title">💼 Job Management</div>
+        <button className="btn btn-orange" onClick={() => setShowModal(true)}>➕ Add Job</button>
+      </div>
+
+      <div className="tabs">
+        {['all','pending','featured'].map(t => (
+          <div key={t} className={`tab ${filter===t?'active':''}`}
+            onClick={() => setFilter(t)}>
+            {t.charAt(0).toUpperCase()+t.slice(1)} Jobs
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{padding:0, overflow:'hidden'}}>
+        {loading ? <div className="loading"><div className="spinner" /></div> : (
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>State</th>
+                <th>Last Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map(j => (
+                <tr key={j.id}>
+                  <td><div className="text-truncate" style={{maxWidth:250}}>{j.title}</div></td>
+                  <td><span className={`badge ${j.category==='government'?'badge-blue':'badge-orange'}`}>{j.category}</span></td>
+                  <td className="text-muted">{j.state || 'All India'}</td>
+                  <td className="text-muted">{j.last_date ? new Date(j.last_date).toLocaleDateString('en-IN') : '—'}</td>
+                  <td>
+                    <div style={{display:'flex', gap:4}}>
+                      {!j.is_verified && <span className="badge badge-orange">Pending</span>}
+                      {j.is_featured && <span className="badge badge-green">Featured</span>}
+                      {j.is_fake_flagged && <span className="badge badge-red">Flagged</span>}
+                      {j.is_verified && !j.is_featured && <span className="badge badge-green">Live</span>}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="action-row">
+                      {!j.is_verified && <button className="btn btn-success btn-sm" onClick={()=>approve(j.id)}>✓ Approve</button>}
+                      <button className="btn btn-primary btn-sm"
+                        onClick={() => feature(j.id, !j.is_featured)}>
+                        {j.is_featured ? '📌 Unpin' : '📌 Pin'}
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={()=>deleteJob(j.id)}>🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h3>Add New Job</h3>
+              <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+            </div>
+            <form onSubmit={addJob}>
+              <div className="form-group">
+                <label className="form-label">Job Title *</label>
+                <input className="form-control" required
+                  value={form.title} onChange={e=>setForm({...form,title:e.target.value})} />
+              </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Department</label>
+                  <input className="form-control" value={form.department}
+                    onChange={e=>setForm({...form,department:e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Organization</label>
+                  <input className="form-control" value={form.organization}
+                    onChange={e=>setForm({...form,organization:e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Category</label>
+                  <select className="form-control" value={form.category}
+                    onChange={e=>setForm({...form,category:e.target.value})}>
+                    <option value="government">Government</option>
+                    <option value="private">Private</option>
+                    <option value="bank">Bank</option>
+                    <option value="defence">Defence</option>
+                    <option value="railway">Railway</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">State</label>
+                  <input className="form-control" value={form.state}
+                    onChange={e=>setForm({...form,state:e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Vacancies</label>
+                  <input className="form-control" type="number" value={form.vacancies}
+                    onChange={e=>setForm({...form,vacancies:e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Last Date</label>
+                  <input className="form-control" type="date" value={form.last_date}
+                    onChange={e=>setForm({...form,last_date:e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Salary</label>
+                  <input className="form-control" placeholder="e.g. ₹25,000 - ₹70,000" value={form.salary_text}
+                    onChange={e=>setForm({...form,salary_text:e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Application Fee</label>
+                  <input className="form-control" placeholder="e.g. ₹100 (GEN)" value={form.application_fee}
+                    onChange={e=>setForm({...form,application_fee:e.target.value})} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Apply URL *</label>
+                <input className="form-control" type="url" required value={form.apply_url}
+                  onChange={e=>setForm({...form,apply_url:e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Short Description</label>
+                <textarea className="form-control" rows={3} value={form.short_description}
+                  onChange={e=>setForm({...form,short_description:e.target.value})} />
+              </div>
+              <button type="submit" className="btn btn-orange" style={{width:'100%', justifyContent:'center', padding:12}}>
+                ➕ Add Job
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── USERS MANAGER ────────────────────────────────────────────
+const UsersManager = () => {
+  const [users, setUsers] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [search, setSearch] = React.useState('');
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const params = search ? `?search=${encodeURIComponent(search)}` : '';
+      const data = await api('GET', `/admin/users${params}`);
+      setUsers(data);
+    } catch(e) {}
+    setLoading(false);
+  };
+
+  React.useEffect(() => { fetchUsers(); }, []);
+
+  const toggleBlock = async (id, blocked) => {
+    await api('PUT', `/admin/users/${id}/block`, { blocked: !blocked });
+    fetchUsers();
+  };
+  const deleteUser = async (id) => {
+    if (!confirm('Delete this user permanently?')) return;
+    await api('DELETE', `/admin/users/${id}`);
+    fetchUsers();
+  };
+
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-title">👥 User Management</div>
+        <div style={{display:'flex',gap:8}}>
+          <input className="search-input" placeholder="Search users..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => e.key==='Enter' && fetchUsers()} />
+          <button className="btn btn-primary" onClick={fetchUsers}>Search</button>
+        </div>
+      </div>
+      <div className="card" style={{padding:0,overflow:'hidden'}}>
+        {loading ? <div className="loading"><div className="spinner"/></div> : (
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email / Phone</th>
+                <th>Plan</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td>{u.name || '—'}</td>
+                  <td className="text-muted">{u.email || u.phone}</td>
+                  <td>
+                    <span className={`badge ${u.subscription_status==='premium'?'badge-green':'badge-blue'}`}>
+                      {u.subscription_status === 'premium' ? '💎 Premium' : '🆓 Free'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`badge ${u.is_blocked?'badge-red':'badge-green'}`}>
+                      {u.is_blocked ? '🚫 Blocked' : '✅ Active'}
+                    </span>
+                  </td>
+                  <td className="text-muted">{new Date(u.created_at).toLocaleDateString('en-IN')}</td>
+                  <td>
+                    <div className="action-row">
+                      <button className={`btn ${u.is_blocked?'btn-success':'btn-danger'} btn-sm`}
+                        onClick={() => toggleBlock(u.id, u.is_blocked)}>
+                        {u.is_blocked ? '✅ Unblock' : '🚫 Block'}
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={() => deleteUser(u.id)}>🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────
+const NotificationsManager = () => {
+  const [form, setForm] = React.useState({ title:'', body:'', filter_type:'all' });
+  const [loading, setLoading] = React.useState(false);
+  const [sent, setSent] = React.useState('');
+
+  const broadcast = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const filter = {};
+      if (form.filter_type === 'premium') filter.subscription = 'premium';
+      if (form.filter_type === 'govt') filter.job_preference = 'government';
+      const data = await api('POST', '/admin/notifications/broadcast', {
+        title: form.title, body: form.body, filter
+      });
+      setSent(data.message);
+      setForm({ title:'', body:'', filter_type:'all' });
+    } catch(e) { setSent('Error: ' + e.message); }
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-title">🔔 Broadcast Notifications</div>
+      </div>
+      <div className="card">
+        <div className="broadcast-box">
+          <form onSubmit={broadcast}>
+            <div className="form-group">
+              <label className="form-label">Notification Title</label>
+              <input className="form-control" required placeholder="e.g. 🆕 New SSC Notification Out!" 
+                value={form.title} onChange={e => setForm({...form, title:e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Message Body</label>
+              <textarea className="form-control" rows={4} required
+                placeholder="Enter notification message..."
+                value={form.body} onChange={e => setForm({...form, body:e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Target Audience</label>
+              <select className="form-control" value={form.filter_type}
+                onChange={e => setForm({...form, filter_type:e.target.value})}>
+                <option value="all">All Users</option>
+                <option value="premium">Premium Users Only</option>
+                <option value="govt">Government Job Seekers</option>
+              </select>
+            </div>
+            {sent && <div style={{padding:12, background:'var(--success)22', borderRadius:8, color:'var(--success)', marginBottom:12, fontSize:13}}>{sent}</div>}
+            <button type="submit" className="btn btn-orange" disabled={loading}
+              style={{padding:'12px 24px'}}>
+              {loading ? <div className="spinner"/> : '📤 Send Broadcast'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── MAIN APP ─────────────────────────────────────────────────
+const App = () => {
+  const [adminName, setAdminName] = React.useState(
+    localStorage.getItem('admin_token') ? 'Admin' : null
+  );
+  const [page, setPage] = React.useState('dashboard');
+
+  const logout = () => {
+    localStorage.removeItem('admin_token');
+    setAdminName(null);
+  };
+
+  if (!adminName) return <LoginScreen onLogin={setAdminName} />;
+
+  const navItems = [
+    { id:'dashboard', icon:'📊', label:'Dashboard' },
+    { id:'jobs', icon:'💼', label:'Jobs' },
+    { id:'users', icon:'👥', label:'Users' },
+    { id:'notifications', icon:'🔔', label:'Notifications' },
+    { id:'study', icon:'📚', label:'Study Material' },
+    { id:'revenue', icon:'💰', label:'Revenue' },
+  ];
+
+  return (
+    <div style={{display:'flex'}}>
+      {/* SIDEBAR */}
+      <div className="sidebar">
+        <div className="logo">
+          <h2>🔰 RozgarX</h2>
+          <span>Admin Panel</span>
+        </div>
+        <div style={{padding:'12px 0'}}>
+          {navItems.map(n => (
+            <button key={n.id} className={`nav-item ${page===n.id?'active':''}`}
+              onClick={() => setPage(n.id)}>
+              <span>{n.icon}</span>
+              <span>{n.label}</span>
+            </button>
+          ))}
+        </div>
+        <div style={{padding:'12px 20px', borderTop:'1px solid var(--dark-border)', marginTop:'auto'}}>
+          <div style={{fontSize:12, color:'var(--text-muted)', marginBottom:8}}>Logged in as <strong>{adminName}</strong></div>
+          <button className="btn btn-danger btn-sm" onClick={logout}>🚪 Logout</button>
+        </div>
+      </div>
+
+      {/* MAIN */}
+      <div className="main-content">
+        {page === 'dashboard' && <Dashboard />}
+        {page === 'jobs' && <JobsManager />}
+        {page === 'users' && <UsersManager />}
+        {page === 'notifications' && <NotificationsManager />}
+        {page === 'study' && <div className="card"><p className="text-muted">Study material management — upload via Supabase Storage and add records here.</p></div>}
+        {page === 'revenue' && <div className="card"><p className="text-muted">Revenue analytics — connect to your subscriptions table for detailed charts.</p></div>}
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>
