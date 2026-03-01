@@ -1,36 +1,51 @@
-name: Build Flutter APK
+name: rozgarx
+description: RozgarX Job Alert Application
+publish_to: "none"
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+version: 1.0.0+1
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+environment:
+  sdk: ">=3.2.0 <4.0.0"
 
-    defaults:
-      run:
-        working-directory: flutter_screens
+dependencies:
+  flutter:
+    sdk: flutter
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  cupertino_icons: ^1.0.6
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.0'
+  # State Management
+  provider: ^6.1.2
 
-      - name: Install dependencies
-        run: flutter pub get
+  # Networking
+  http: ^1.2.1
+  dio: ^5.4.3+1
 
-      - name: Build Release APK
-        run: flutter build apk --release
+  # Firebase (optional – remove if not using)
+  firebase_core: ^2.30.0
+  firebase_auth: ^4.19.0
+  cloud_firestore: ^4.17.0
+  firebase_messaging: ^14.9.0
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: flutter_screens/build/app/outputs/flutter-apk/app-release.apk
+  # Local Storage
+  shared_preferences: ^2.2.3
+
+  # UI
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1
+
+  # Utilities
+  intl: ^0.19.0
+  url_launcher: ^6.2.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.2
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
