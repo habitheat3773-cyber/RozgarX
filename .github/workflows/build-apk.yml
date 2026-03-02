@@ -1,0 +1,86 @@
+name: RozgarX Build APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Java (required for Android build)
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      # 4. Verify Flutter installation
+      - name: Flutter Version
+        run: flutter --version
+
+      # 5. Create google-services.json from secret
+      - name: Create google-services.json
+        run: |
+          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > flutter_app/android/app/google-services.json
+
+      # 6. Get Flutter dependencies
+      - name: Get Dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      # 7. Analyze code (optional, remove if you want faster builds)
+      - name: Analyze Code
+        working-directory: flutter_app
+        run: flutter analyze --no-fatal-infos
+        continue-on-error: true
+
+      # 8. Run tests (optional)
+      - name: Run Tests
+        working-directory: flutter_app
+        run: flutter test
+        continue-on-error: true
+
+      # 9. Build Debug APK
+      - name: Build Debug APK
+        working-directory: flutter_app
+        run: flutter build apk --debug
+
+      # 10. Build Release APK (unsigned)
+      - name: Build Release APK
+        working-directory: flutter_app
+        run: flutter build apk --release --no-shrink
+
+      # 11. Upload Debug APK as artifact
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: rozgarx-debug-apk
+          path: flutter_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+
+      # 12. Upload Release APK as artifact
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: rozgarx-release-apk
+          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+          
